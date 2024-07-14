@@ -1,4 +1,4 @@
-use super::pb::{InferInputTensor, InferParameter, InferTensorContents, ModelInferRequest};
+use super::pb::{InferInputTensor, InferParameter, InferTensorContents, ModelInferRequest, InferRequestedOutputTensor};
 use crate::types::{Bytes, TritonDataTypes};
 use crate::{array_to_tensor, generate_trait_transform_infer_tensor_contents};
 use ndarray::ArrayD;
@@ -69,6 +69,17 @@ impl InferInput {
         self
     }
 
+    /// No need to use fn set_shape if you have already called (set_)data_from_ndarray
+    pub fn set_shape(&mut self, shape: Vec<i64>) {
+        self.inner.shape = shape;
+    }
+
+    /// No need to use fn shape if you have already called (set_)data_from_ndarray
+    pub fn shape(mut self, shape: Vec<i64>) -> Self {
+        self.set_shape(shape);
+        self
+    }
+
     pub(crate) fn build(self) -> InferInputTensor {
         self.inner
     }
@@ -86,11 +97,11 @@ impl ModelInput {
         }
     }
 
-    pub fn set_model_name<S: ToString>(&mut self, model_name: S) {
-        self.inner.model_name = model_name.to_string();
+    pub fn set_model_name(&mut self, model_name: String) {
+        self.inner.model_name = model_name;
     }
 
-    pub fn model_name<S: ToString>(mut self, model_name: S) -> Self {
+    pub fn model_name(mut self, model_name: String) -> Self {
         self.set_model_name(model_name);
         self
     }
@@ -117,6 +128,51 @@ impl ModelInput {
 
     pub fn inputs(mut self, inputs: Vec<InferInput>) -> Self {
         self.set_inputs(inputs);
+        self
+    }
+
+    pub fn set_id(&mut self, id: String) {
+        self.inner.id = id;
+    }
+
+    pub fn id(mut self, id: String) -> Self {
+        self.set_id(id);
+        self
+    }
+
+    pub fn set_model_version(&mut self, model_version: i32) {
+        self.inner.model_version = model_version.to_string();
+    }
+
+    pub fn model_version(mut self, model_version: i32) -> Self {
+        self.set_model_version(model_version);
+        self
+    }
+
+    pub fn set_parameters(&mut self, parameters: HashMap<String, InferParameter>) {
+        self.inner.parameters = parameters;
+    }
+
+    pub fn parameters(mut self, parameters: HashMap<String, InferParameter>) -> Self {
+        self.set_parameters(parameters);
+        self
+    }
+
+    pub fn set_outputs(&mut self, outputs: Vec<InferRequestedOutputTensor>) {
+        self.inner.outputs = outputs;
+    }
+
+    pub fn outputs(mut self, outputs: Vec<InferRequestedOutputTensor>) -> Self {
+        self.set_outputs(outputs);
+        self
+    }
+
+    pub fn set_raw_input_contents(&mut self, raw_input_contents: Vec<Bytes>) {
+        self.inner.raw_input_contents = raw_input_contents;
+    }
+
+    pub fn raw_input_contents(mut self, raw_input_contents: Vec<Bytes>) -> Self {
+        self.set_raw_input_contents(raw_input_contents);
         self
     }
 
