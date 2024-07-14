@@ -1,20 +1,36 @@
-use std::fmt::{Debug, Display, Formatter};
+use thiserror::Error as ThisError;
 
-#[derive(Debug)]
-pub struct Error {}
+#[derive(ThisError, Debug)]
+pub enum Error {
+    #[error("Error in the response: {}", .status.message())]
+    ResponseError { status: tonic::Status },
 
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
+    #[error("Invalid Uri: {}", .0)]
+    InvalidUri(String),
+
+    #[error("Resource was poisoned: {}", .0)]
+    ResourcePoisoned(String),
+
+    #[error("Error in conversion: {}", .0)]
+    ConversionError(String),
 }
-
-impl std::error::Error for Error {}
 
 impl From<tonic::Status> for Error {
-    fn from(value: tonic::Status) -> Self {
-        Self {}
+    fn from(status: tonic::Status) -> Self {
+        Self::ResponseError { status }
     }
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+impl<T> From<std::sync::PoisonError<T>> for Error {
+    fn from(error: std::sync::PoisonError<T>) -> Self {
+        Self::ResourcePoisoned(error.to_string())
+    }
+}
+
+impl From<ndarray::ShapeError> for Error {
+    fn from(error: ndarray::ShapeError) -> Self {
+        Self::ConversionError(error.to_string())
+    }
+}
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
