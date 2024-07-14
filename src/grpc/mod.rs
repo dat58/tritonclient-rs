@@ -1,6 +1,6 @@
 pub mod client;
 pub mod input;
-pub mod macros;
+mod macros;
 pub mod output;
 
 pub mod pb {

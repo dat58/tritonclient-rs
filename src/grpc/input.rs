@@ -50,7 +50,7 @@ impl InferInput {
 
     pub fn set_data_from_ndarray<T>(&mut self, array: ArrayD<T>)
     where
-        T: Sized + 'static + TransformInferTensorContents,
+        T: TransformInferTensorContents,
     {
         self.inner.shape = array
             .shape()
@@ -63,7 +63,7 @@ impl InferInput {
 
     pub fn data_from_ndarray<T>(mut self, array: ArrayD<T>) -> Self
     where
-        T: Sized + 'static + TransformInferTensorContents,
+        T: TransformInferTensorContents,
     {
         self.set_data_from_ndarray(array);
         self
@@ -86,25 +86,37 @@ impl ModelInput {
         }
     }
 
-    pub fn model_name<S: ToString>(mut self, model_name: S) -> Self {
+    pub fn set_model_name<S: ToString>(&mut self, model_name: S) {
         self.inner.model_name = model_name.to_string();
+    }
+
+    pub fn model_name<S: ToString>(mut self, model_name: S) -> Self {
+        self.set_model_name(model_name);
         self
     }
 
-    pub fn input(mut self, input: InferInput) -> Self {
+    pub fn set_input(&mut self, input: InferInput) {
         if self.inner.inputs.is_empty() {
             self.inner.inputs = vec![input.build()];
         } else {
             self.inner.inputs.push(input.build());
         }
+    }
+
+    pub fn input(mut self, input: InferInput) -> Self {
+        self.set_input(input);
         self
     }
 
-    pub fn inputs(mut self, inputs: Vec<InferInput>) -> Self {
+    pub fn set_inputs(&mut self, inputs: Vec<InferInput>) {
         self.inner.inputs = inputs
             .into_iter()
             .map(|input| input.build())
             .collect::<Vec<_>>();
+    }
+
+    pub fn inputs(mut self, inputs: Vec<InferInput>) -> Self {
+        self.set_inputs(inputs);
         self
     }
 

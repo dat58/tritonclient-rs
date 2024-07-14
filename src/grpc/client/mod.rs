@@ -9,7 +9,6 @@ use crate::grpc::pb::{self, GrpcInferenceServiceClient, HealthClient};
 use channel::ChannelPool;
 use std::future::Future;
 use tonic::transport::Channel;
-use tonic::Status;
 
 pub struct InferenceServerClient {
     pub config: InferenceServerClientConfig,
@@ -24,7 +23,7 @@ impl InferenceServerClient {
         }
     }
 
-    async fn with_root_client<T, O: Future<Output = std::result::Result<T, Status>>>(
+    async fn with_root_client<T, O: Future<Output = Result<T>>>(
         &self,
         f: impl Fn(GrpcInferenceServiceClient<Channel>) -> O,
     ) -> Result<T> {
@@ -63,7 +62,7 @@ impl InferenceServerClient {
         let request = &request.into();
         self.with_root_client(|mut client| async move {
             let result = client.model_infer(request.clone()).await?;
-            Ok(ModelOutput::from(result.into_inner()))
+            ModelOutput::new(result.into_inner())
         })
         .await
     }

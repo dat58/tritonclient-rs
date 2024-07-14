@@ -1,3 +1,4 @@
+use super::{Error, Result};
 use std::str::FromStr;
 use std::time::Duration;
 use tonic::transport::Uri;
@@ -27,11 +28,11 @@ pub struct InferenceServerClientConfig {
 }
 
 impl InferenceServerClientConfig {
-    pub fn from_uri<S: AsRef<str>>(uri: S) -> Self {
-        Self {
-            uri: Uri::from_str(uri.as_ref()).unwrap(),
+    pub fn from_uri<S: AsRef<str>>(uri: S) -> Result<Self> {
+        Ok(Self {
+            uri: Uri::from_str(uri.as_ref()).map_err(|e| Error::InvalidUri(e.to_string()))?,
             ..Self::default()
-        }
+        })
     }
 
     pub fn timeout<T: AsTimeout>(mut self, timeout: T) -> Self {

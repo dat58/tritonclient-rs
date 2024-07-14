@@ -1,4 +1,5 @@
-use super::config::InferenceServerClientConfig;
+use super::InferenceServerClientConfig;
+use super::{Error, Result};
 use std::future::Future;
 use std::sync::RwLock;
 use std::time::Duration;
@@ -35,14 +36,33 @@ impl ChannelPool {
         }
     }
 
-    async fn make_channel(&self) -> Result<Channel, Status> {
-        let endpoint = Channel::builder(self.uri.clone())
+    async fn make_channel(&self) -> Result<Channel> {
+        let mut tls = self.tls;
+        let mut uri = self.uri.clone();
+        match uri.scheme_str() {
+            Some(scheme) => {
+                let scheme = scheme.to_lowercase();
+                if scheme == "https" {
+                    tls = true;
+                } else if scheme == "http" {
+                    tls = false;
+                } else {
+                    return Err(Status::invalid_argument(format!(
+                        "Invalid scheme `{scheme}`."
+                    )))?;
+                }
+            }
+            None => {
+                uri = format!("http://{}", uri.to_string()).parse().unwrap();
+            }
+        };
+        let endpoint = Channel::builder(uri)
             .timeout(self.timeout)
             .connect_timeout(self.connection_timeout)
             .keep_alive_while_idle(self.keep_alive_while_idle)
             .keep_alive_timeout(self.keep_alive_timeout);
 
-        let endpoint = if self.tls {
+        let endpoint = if tls {
             endpoint
                 .tls_config(ClientTlsConfig::new())
                 .map_err(|e| Status::internal(format!("Failed to create TLS config: {}", e)))?
@@ -61,8 +81,8 @@ impl ChannelPool {
         Ok(channel)
     }
 
-    pub async fn get_channel(&self) -> Result<Channel, Status> {
-        if let Some(channel) = &*self.channel.read().unwrap() {
+    pub async fn get_channel(&self) -> Result<Channel> {
+        if let Some(channel) = &*self.channel.read()? {
             return Ok(channel.clone());
         }
 
@@ -70,35 +90,39 @@ impl ChannelPool {
         Ok(channel)
     }
 
-    pub async fn drop_channel(&self) {
-        let mut channel = self.channel.write().unwrap();
+    pub async fn drop_channel(&self) -> Result<()> {
+        let mut channel = self.channel.write()?;
         *channel = None;
+        Ok(())
     }
 
     // Allow to retry request if channel is broken
-    pub async fn with_channel<T, O: Future<Output = Result<T, Status>>>(
+    pub async fn with_channel<T, O: Future<Output = Result<T>>>(
         &self,
         f: impl Fn(Channel) -> O,
         allow_retry: bool,
-    ) -> Result<T, Status> {
+    ) -> Result<T> {
         let channel = self.get_channel().await?;
 
-        let result: Result<T, Status> = f(channel).await;
+        let result: Result<T> = f(channel).await;
 
         // Reconnect on failure to handle the case with domain name change.
         match result {
             Ok(res) => Ok(res),
-            Err(err) => match err.code() {
-                Code::Internal | Code::Unavailable | Code::Cancelled | Code::Unknown => {
-                    self.drop_channel().await;
-                    if allow_retry {
-                        let channel = self.get_channel().await?;
-                        Ok(f(channel).await?)
-                    } else {
-                        Err(err)
+            Err(err) => match err {
+                Error::ResponseError { ref status } => match status.code() {
+                    Code::Internal | Code::Unavailable | Code::Cancelled | Code::Unknown => {
+                        self.drop_channel().await?;
+                        if allow_retry {
+                            let channel = self.get_channel().await?;
+                            Ok(f(channel).await?)
+                        } else {
+                            Err(err)
+                        }
                     }
-                }
-                _ => Err(err)?,
+                    _ => Err(err),
+                },
+                _ => Err(err),
             },
         }
     }
