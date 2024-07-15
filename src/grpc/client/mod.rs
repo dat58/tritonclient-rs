@@ -7,6 +7,7 @@ pub use error::*;
 use crate::grpc::output::ModelOutput;
 use crate::grpc::pb::{self, GrpcInferenceServiceClient, HealthClient};
 use channel::ChannelPool;
+use std::collections::HashMap;
 use std::future::Future;
 use tonic::transport::Channel;
 
@@ -170,5 +171,58 @@ impl InferenceServerClient {
             Ok(result.into_inner())
         })
         .await
+    }
+
+    pub async fn repository_model_load(
+        &self,
+        repository_name: &str,
+        model_name: &str,
+        parameters: Option<&HashMap<String, pb::ModelRepositoryParameter>>,
+    ) -> Result<()> {
+        self.with_root_client(|mut client| async move {
+            let _ = client
+                .repository_model_load(pb::RepositoryModelLoadRequest {
+                    repository_name: repository_name.to_string(),
+                    model_name: model_name.to_string(),
+                    parameters: parameters.unwrap_or(&HashMap::new()).clone(),
+                })
+                .await?;
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn repository_model_unload(
+        &self,
+        repository_name: &str,
+        model_name: &str,
+        parameters: Option<&HashMap<String, pb::ModelRepositoryParameter>>,
+    ) -> Result<()> {
+        self.with_root_client(|mut client| async move {
+            let _ = client
+                .repository_model_unload(pb::RepositoryModelUnloadRequest {
+                    repository_name: repository_name.to_string(),
+                    model_name: model_name.to_string(),
+                    parameters: parameters.unwrap_or(&HashMap::new()).clone(),
+                })
+                .await?;
+            Ok(())
+        })
+            .await
+    }
+
+    pub async fn system_shared_memory_status(
+        &self,
+        name: &str
+    ) -> Result<pb::SystemSharedMemoryStatusResponse> {
+        self.with_root_client(|mut client| async move {
+            let result = client
+                .system_shared_memory_status(pb::SystemSharedMemoryStatusRequest {
+                    name: name.to_string(),
+                })
+                .await?;
+            Ok(result.into_inner())
+        })
+            .await
     }
 }
