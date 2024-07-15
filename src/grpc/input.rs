@@ -1,9 +1,9 @@
+use super::macros::{array_to_tensor, generate_trait_transform_infer_tensor_contents};
 use super::pb::{
     InferInputTensor, InferParameter, InferRequestedOutputTensor, InferTensorContents,
     ModelInferRequest,
 };
 use crate::types::{Bytes, TritonDataTypes};
-use super::macros::{array_to_tensor, generate_trait_transform_infer_tensor_contents};
 use ndarray::ArrayD;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
