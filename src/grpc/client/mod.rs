@@ -6,6 +6,7 @@ pub use error::*;
 
 use crate::grpc::output::ModelOutput;
 use crate::grpc::pb::{self, GrpcInferenceServiceClient, HealthClient};
+use crate::types::Bytes;
 use channel::ChannelPool;
 use std::collections::HashMap;
 use std::future::Future;
@@ -180,7 +181,7 @@ impl InferenceServerClient {
         parameters: Option<&HashMap<String, pb::ModelRepositoryParameter>>,
     ) -> Result<()> {
         self.with_root_client(|mut client| async move {
-            let _ = client
+            client
                 .repository_model_load(pb::RepositoryModelLoadRequest {
                     repository_name: repository_name.to_string(),
                     model_name: model_name.to_string(),
@@ -199,7 +200,7 @@ impl InferenceServerClient {
         parameters: Option<&HashMap<String, pb::ModelRepositoryParameter>>,
     ) -> Result<()> {
         self.with_root_client(|mut client| async move {
-            let _ = client
+            client
                 .repository_model_unload(pb::RepositoryModelUnloadRequest {
                     repository_name: repository_name.to_string(),
                     model_name: model_name.to_string(),
@@ -208,12 +209,12 @@ impl InferenceServerClient {
                 .await?;
             Ok(())
         })
-            .await
+        .await
     }
 
     pub async fn system_shared_memory_status(
         &self,
-        name: &str
+        name: &str,
     ) -> Result<pb::SystemSharedMemoryStatusResponse> {
         self.with_root_client(|mut client| async move {
             let result = client
@@ -223,6 +224,119 @@ impl InferenceServerClient {
                 .await?;
             Ok(result.into_inner())
         })
-            .await
+        .await
+    }
+
+    pub async fn system_shared_memory_register(
+        &self,
+        name: &str,
+        key: &str,
+        offset: u64,
+        byte_size: u64,
+    ) -> Result<()> {
+        self.with_root_client(|mut client| async move {
+            client
+                .system_shared_memory_register(pb::SystemSharedMemoryRegisterRequest {
+                    name: name.to_string(),
+                    key: key.to_string(),
+                    offset,
+                    byte_size,
+                })
+                .await?;
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn system_shared_memory_unregister(&self, name: &str) -> Result<()> {
+        self.with_root_client(|mut client| async move {
+            client
+                .system_shared_memory_unregister(pb::SystemSharedMemoryUnregisterRequest {
+                    name: name.to_string(),
+                })
+                .await?;
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn cuda_shared_memory_status(
+        &self,
+        name: &str,
+    ) -> Result<pb::CudaSharedMemoryStatusResponse> {
+        self.with_root_client(|mut client| async move {
+            let result = client
+                .cuda_shared_memory_status(pb::CudaSharedMemoryStatusRequest {
+                    name: name.to_string(),
+                })
+                .await?;
+            Ok(result.into_inner())
+        })
+        .await
+    }
+
+    pub async fn cuda_shared_memory_register(
+        &self,
+        name: &str,
+        raw_handle: &Bytes,
+        device_id: i64,
+        byte_size: u64,
+    ) -> Result<()> {
+        self.with_root_client(|mut client| async move {
+            client
+                .cuda_shared_memory_register(pb::CudaSharedMemoryRegisterRequest {
+                    name: name.to_string(),
+                    raw_handle: raw_handle.clone(),
+                    device_id,
+                    byte_size,
+                })
+                .await?;
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn cuda_shared_memory_unregister(&self, name: &str) -> Result<()> {
+        self.with_root_client(|mut client| async move {
+            client
+                .cuda_shared_memory_unregister(pb::CudaSharedMemoryUnregisterRequest {
+                    name: name.to_string(),
+                })
+                .await?;
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn trace_setting(
+        &self,
+        model_name: &str,
+        settings: Option<&HashMap<String, pb::TraceSettingValue>>,
+    ) -> Result<pb::TraceSettingResponse> {
+        self.with_root_client(|mut client| async move {
+            let result = client
+                .trace_setting(pb::TraceSettingRequest {
+                    settings: settings.unwrap_or(&HashMap::new()).clone(),
+                    model_name: model_name.to_string(),
+                })
+                .await?;
+            Ok(result.into_inner())
+        })
+        .await
+    }
+
+    pub async fn log_settings(
+        &self,
+        settings: Option<&HashMap<String, pb::LogSettingValue>>,
+    ) -> Result<pb::LogSettingsResponse> {
+        self.with_root_client(|mut client| async move {
+            let result = client
+                .log_settings(pb::LogSettingsRequest {
+                    settings: settings.unwrap_or(&HashMap::new()).clone(),
+                })
+                .await?;
+            Ok(result.into_inner())
+        })
+        .await
     }
 }
