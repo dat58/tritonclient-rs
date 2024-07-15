@@ -1,4 +1,7 @@
-use super::pb::{InferInputTensor, InferParameter, InferTensorContents, ModelInferRequest, InferRequestedOutputTensor};
+use super::pb::{
+    InferInputTensor, InferParameter, InferRequestedOutputTensor, InferTensorContents,
+    ModelInferRequest,
+};
 use crate::types::{Bytes, TritonDataTypes};
 use crate::{array_to_tensor, generate_trait_transform_infer_tensor_contents};
 use ndarray::ArrayD;
