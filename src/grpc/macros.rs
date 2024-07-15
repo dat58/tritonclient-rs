@@ -1,4 +1,3 @@
-#[macro_export]
 macro_rules! array_to_tensor {
     ($array:expr; bool) => {
         if $array.type_id() != TypeId::of::<ArrayD<bool>>() {
@@ -149,7 +148,6 @@ macro_rules! array_to_tensor {
     };
 }
 
-#[macro_export]
 macro_rules! generate_trait_transform_infer_tensor_contents {
     ($dtype:ident) => {
         impl TransformInferTensorContents for $dtype {
@@ -159,3 +157,6 @@ macro_rules! generate_trait_transform_infer_tensor_contents {
         }
     };
 }
+
+pub(crate) use array_to_tensor;
+pub(crate) use generate_trait_transform_infer_tensor_contents;

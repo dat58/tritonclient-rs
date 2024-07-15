@@ -1,6 +1,6 @@
 pub mod client;
 pub mod input;
-mod macros;
+pub(crate) mod macros;
 pub mod output;
 
 pub mod pb {
