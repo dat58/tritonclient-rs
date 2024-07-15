@@ -9,6 +9,8 @@ pub mod pb {
     pub use grpc_inference_service_client::*;
     pub use health_client::*;
     pub use infer_parameter::*;
+    pub use log_settings_request::SettingValue as LogSettingValue;
     pub use model_infer_request::*;
     pub use model_infer_response::*;
+    pub use trace_setting_request::SettingValue as TraceSettingValue;
 }
