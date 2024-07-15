@@ -66,4 +66,12 @@ impl InferenceServerClient {
         })
         .await
     }
+
+    pub async fn is_server_ready(&self) -> Result<bool> {
+        self.with_root_client(|mut client| async move {
+            let result = client.server_ready(pb::ServerReadyRequest {}).await?;
+            Ok(result.into_inner().ready)
+        })
+        .await
+    }
 }
