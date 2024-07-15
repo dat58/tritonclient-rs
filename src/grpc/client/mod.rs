@@ -74,4 +74,101 @@ impl InferenceServerClient {
         })
         .await
     }
+
+    pub async fn is_server_live(&self) -> Result<bool> {
+        self.with_root_client(|mut client| async move {
+            let result = client.server_live(pb::ServerLiveRequest {}).await?;
+            Ok(result.into_inner().live)
+        })
+        .await
+    }
+
+    pub async fn is_model_ready(&self, model_name: &str, version: Option<&str>) -> Result<bool> {
+        self.with_root_client(|mut client| async move {
+            let result = client
+                .model_ready(pb::ModelReadyRequest {
+                    name: model_name.to_string(),
+                    version: version.unwrap_or("").to_string(),
+                })
+                .await?;
+            Ok(result.into_inner().ready)
+        })
+        .await
+    }
+
+    pub async fn server_metadata(&self) -> Result<pb::ServerMetadataResponse> {
+        self.with_root_client(|mut client| async move {
+            let result = client.server_metadata(pb::ServerMetadataRequest {}).await?;
+            Ok(result.into_inner())
+        })
+        .await
+    }
+
+    pub async fn model_metadata(
+        &self,
+        model_name: &str,
+        version: Option<&str>,
+    ) -> Result<pb::ModelMetadataResponse> {
+        self.with_root_client(|mut client| async move {
+            let result = client
+                .model_metadata(pb::ModelMetadataRequest {
+                    name: model_name.to_string(),
+                    version: version.unwrap_or("").to_string(),
+                })
+                .await?;
+            Ok(result.into_inner())
+        })
+        .await
+    }
+
+    pub async fn model_config(
+        &self,
+        model_name: &str,
+        version: Option<&str>,
+    ) -> Result<pb::ModelConfigResponse> {
+        self.with_root_client(|mut client| async move {
+            let result = client
+                .model_config(pb::ModelConfigRequest {
+                    name: model_name.to_string(),
+                    version: version.unwrap_or("").to_string(),
+                })
+                .await?;
+            Ok(result.into_inner())
+        })
+        .await
+    }
+
+    pub async fn model_statistics(
+        &self,
+        model_name: &str,
+        version: Option<&str>,
+    ) -> Result<pb::ModelStatisticsResponse> {
+        self.with_root_client(|mut client| async move {
+            let result = client
+                .model_statistics(pb::ModelStatisticsRequest {
+                    name: model_name.to_string(),
+                    version: version.unwrap_or("").to_string(),
+                })
+                .await?;
+            Ok(result.into_inner())
+        })
+        .await
+    }
+
+    pub async fn repository_index(
+        &self,
+        repository_name: &str,
+        ready: bool,
+    ) -> Result<pb::RepositoryIndexResponse> {
+        self.with_root_client(|mut client| async move {
+            let result = client
+                .repository_index(pb::RepositoryIndexRequest {
+                    repository_name: repository_name.to_string(),
+                    ready,
+                })
+                .await?;
+            Ok(result.into_inner())
+        })
+        .await
+    }
 }
