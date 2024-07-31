@@ -14,7 +14,7 @@ pub struct InferenceServerClientConfig {
     /// Secure connection
     pub tls: bool,
 
-    /// Timeout for connecting to the Qdrant server
+    /// Timeout for connecting to the Triton server
     pub connect_timeout: Duration,
 
     /// Whether to keep idle connections active
