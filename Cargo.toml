@@ -1,11 +1,11 @@
 [package]
 name = "tritonclient"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Vo Tien Dat <vtdat58@gmail.com>"]
 
 [dependencies]
-ndarray = "0.15.6"
+ndarray = "0.*"
 prost = "0.13.1"
 thiserror = "~1"
 tonic = { version = "0.12.0", default-features = false, features = ["channel", "codegen", "prost", "zstd", "transport", "gzip", "tls"] }
