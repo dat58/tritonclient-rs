@@ -340,3 +340,18 @@ impl InferenceServerClient {
         .await
     }
 }
+
+impl Clone for InferenceServerClient {
+    fn clone(&self) -> Self {
+        let config = self.config.clone();
+        let channel = ChannelPool::new(
+            config.uri.clone(),
+            config.tls,
+            config.timeout,
+            config.connect_timeout,
+            config.keep_alive_while_idle,
+            config.keep_alive_timeout,
+        );
+        Self { config, channel }
+    }
+}
