@@ -1,7 +1,7 @@
 use super::macros::{array_to_tensor, generate_trait_transform_infer_tensor_contents};
 use super::pb::{
     InferInputTensor, InferParameter, InferRequestedOutputTensor, InferTensorContents,
-    ModelInferRequest,
+    ModelInferRequest, ParameterChoice,
 };
 use crate::types::{Bytes, TritonDataTypes};
 use ndarray::ArrayD;
@@ -52,8 +52,8 @@ impl InferInput {
     }
 
     pub fn set_data_from_ndarray<T>(&mut self, array: ArrayD<T>)
-    where
-        T: TransformInferTensorContents,
+        where
+            T: TransformInferTensorContents,
     {
         self.inner.shape = array
             .shape()
@@ -65,8 +65,8 @@ impl InferInput {
     }
 
     pub fn data_from_ndarray<T>(mut self, array: ArrayD<T>) -> Self
-    where
-        T: TransformInferTensorContents,
+        where
+            T: TransformInferTensorContents,
     {
         self.set_data_from_ndarray(array);
         self
@@ -80,6 +80,45 @@ impl InferInput {
     /// No need to use fn shape if you have already called (set_)data_from_ndarray
     pub fn shape(mut self, shape: Vec<i64>) -> Self {
         self.set_shape(shape);
+        self
+    }
+
+    pub fn set_shared_memory<T: ToString>(
+        &mut self,
+        region_name: T,
+        byte_size: i64,
+        offset: Option<i64>,
+    ) {
+        let parameters = HashMap::from([
+            (
+                "shared_memory_region".to_string(),
+                InferParameter {
+                    parameter_choice: Some(ParameterChoice::StringParam(region_name.to_string())),
+                },
+            ),
+            (
+                "shared_memory_byte_size".to_string(),
+                InferParameter {
+                    parameter_choice: Some(ParameterChoice::Int64Param(byte_size)),
+                },
+            ),
+            (
+                "shared_memory_offset".to_string(),
+                InferParameter {
+                    parameter_choice: Some(ParameterChoice::Int64Param(offset.unwrap_or(0))),
+                },
+            ),
+        ]);
+        self.inner.parameters = parameters;
+    }
+
+    pub fn shared_memory<T: ToString>(
+        mut self,
+        region_name: T,
+        byte_size: i64,
+        offset: Option<i64>,
+    ) -> Self {
+        self.set_shared_memory(region_name, byte_size, offset);
         self
     }
 
