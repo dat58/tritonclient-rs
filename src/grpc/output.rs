@@ -21,29 +21,68 @@ pub enum ArrayOutputOneOf {
 }
 
 fn vec_u8_to_vec_t<T: Sized>(data: Vec<u8>) -> Vec<T> {
-    let ratio = std::mem::size_of::<T>() / std::mem::size_of::<u8>();
-    let capacity = data.len() / ratio;
+    let elem_size = std::mem::size_of::<T>();
+    let len = data.len() / elem_size;
+    let mut result = Vec::<T>::with_capacity(len);
     unsafe {
-        let ptr = data.as_ptr() as *mut T;
-        std::mem::forget(data);
-        Vec::from_raw_parts(ptr, capacity, capacity)
+        std::ptr::copy_nonoverlapping(
+            data.as_ptr(),
+            result.as_mut_ptr() as *mut u8,
+            len * elem_size,
+        );
+        result.set_len(len);
     }
+    result
 }
 
-fn vec_u8_base_16bits_to_vec_f32(data: Vec<u8>) -> Vec<f32> {
-    let chunks = data.chunks(2);
-    let mut vec = Vec::with_capacity(chunks.len());
-    for chunk in chunks {
-        vec.push(f32::from_be_bytes([0, 0, chunk[0], chunk[1]]));
-    }
-    vec
+fn fp16_to_f32(bits: u16) -> f32 {
+    let sign = (bits >> 15) as u32;
+    let exp = ((bits >> 10) & 0x1f) as u32;
+    let mantissa = (bits & 0x3ff) as u32;
+
+    let f32_bits = if exp == 0 {
+        if mantissa == 0 {
+            sign << 31
+        } else {
+            // Subnormal FP16: normalize by finding the leading 1
+            let mut shift = 0u32;
+            let mut m = mantissa;
+            while (m & 0x400) == 0 {
+                m <<= 1;
+                shift += 1;
+            }
+            // New f32 exponent: (127 - 15) - shift = 112 - shift
+            (sign << 31) | ((112u32.wrapping_sub(shift)) << 23) | ((m & 0x3ff) << 13)
+        }
+    } else if exp == 31 {
+        // Inf or NaN
+        (sign << 31) | (0xffu32 << 23) | (mantissa << 13)
+    } else {
+        // Normal: adjust exponent bias from 15 to 127 (add 112)
+        (sign << 31) | ((exp + 112) << 23) | (mantissa << 13)
+    };
+    f32::from_bits(f32_bits)
+}
+
+fn vec_fp16_to_vec_f32(data: Vec<u8>) -> Vec<f32> {
+    data.chunks_exact(2)
+        .map(|c| fp16_to_f32(u16::from_le_bytes([c[0], c[1]])))
+        .collect()
+}
+
+// BF16 is the upper 16 bits of f32; in little-endian the two BF16 bytes map
+// directly to bytes 2 and 3 of the corresponding f32 value.
+fn vec_bf16_to_vec_f32(data: Vec<u8>) -> Vec<f32> {
+    data.chunks_exact(2)
+        .map(|c| f32::from_le_bytes([0, 0, c[0], c[1]]))
+        .collect()
 }
 
 fn vec_u8_to_bytes(data: Vec<u8>) -> Vec<Bytes> {
     let mut offset = 0;
     let mut vec = Vec::<Bytes>::new();
     while offset < data.len() {
-        let length = u32::from_be_bytes([
+        let length = u32::from_le_bytes([
             data[offset],
             data[offset + 1],
             data[offset + 2],
@@ -114,9 +153,14 @@ impl ModelOutput {
                     let array = ArrayD::from_shape_vec(shape, vec_u8_to_vec_t::<u64>(raw_content))?;
                     inner.insert(output.name, ArrayOutputOneOf::UINT64(array));
                 }
-                TritonDataTypes::FP16 | TritonDataTypes::BF16 => {
+                TritonDataTypes::FP16 => {
                     let array =
-                        ArrayD::from_shape_vec(shape, vec_u8_base_16bits_to_vec_f32(raw_content))?;
+                        ArrayD::from_shape_vec(shape, vec_fp16_to_vec_f32(raw_content))?;
+                    inner.insert(output.name, ArrayOutputOneOf::FP32(array));
+                }
+                TritonDataTypes::BF16 => {
+                    let array =
+                        ArrayD::from_shape_vec(shape, vec_bf16_to_vec_f32(raw_content))?;
                     inner.insert(output.name, ArrayOutputOneOf::FP32(array));
                 }
                 TritonDataTypes::FP32 => {
