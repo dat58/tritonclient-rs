@@ -1,7 +1,7 @@
 macro_rules! array_to_tensor {
     ($array:expr; bool) => {
         InferTensorContents {
-            bool_contents: $array.into_raw_vec(),
+            bool_contents: $array.as_standard_layout().iter().cloned().collect::<Vec<_>>(),
             ..Default::default()
         }
     };
@@ -9,9 +9,9 @@ macro_rules! array_to_tensor {
     ($array:expr; i8) => {
         InferTensorContents {
             int_contents: $array
-                .into_raw_vec()
-                .into_iter()
-                .map(|v| v as i32)
+                .as_standard_layout()
+                .iter()
+                .map(|&v| v as i32)
                 .collect::<Vec<_>>(),
             ..Default::default()
         }
@@ -20,9 +20,9 @@ macro_rules! array_to_tensor {
     ($array:expr; i16) => {
         InferTensorContents {
             int_contents: $array
-                .into_raw_vec()
-                .into_iter()
-                .map(|v| v as i32)
+                .as_standard_layout()
+                .iter()
+                .map(|&v| v as i32)
                 .collect::<Vec<_>>(),
             ..Default::default()
         }
@@ -30,14 +30,14 @@ macro_rules! array_to_tensor {
 
     ($array:expr; i32) => {
         InferTensorContents {
-            int_contents: $array.into_raw_vec(),
+            int_contents: $array.as_standard_layout().iter().cloned().collect::<Vec<_>>(),
             ..Default::default()
         }
     };
 
     ($array:expr; i64) => {
         InferTensorContents {
-            int64_contents: $array.into_raw_vec(),
+            int64_contents: $array.as_standard_layout().iter().cloned().collect::<Vec<_>>(),
             ..Default::default()
         }
     };
@@ -45,9 +45,9 @@ macro_rules! array_to_tensor {
     ($array:expr; u8) => {
         InferTensorContents {
             uint_contents: $array
-                .into_raw_vec()
-                .into_iter()
-                .map(|v| v as u32)
+                .as_standard_layout()
+                .iter()
+                .map(|&v| v as u32)
                 .collect::<Vec<_>>(),
             ..Default::default()
         }
@@ -56,9 +56,9 @@ macro_rules! array_to_tensor {
     ($array:expr; u16) => {
         InferTensorContents {
             uint_contents: $array
-                .into_raw_vec()
-                .into_iter()
-                .map(|v| v as u32)
+                .as_standard_layout()
+                .iter()
+                .map(|&v| v as u32)
                 .collect::<Vec<_>>(),
             ..Default::default()
         }
@@ -66,35 +66,35 @@ macro_rules! array_to_tensor {
 
     ($array:expr; u32) => {
         InferTensorContents {
-            uint_contents: $array.into_raw_vec(),
+            uint_contents: $array.as_standard_layout().iter().cloned().collect::<Vec<_>>(),
             ..Default::default()
         }
     };
 
     ($array:expr; u64) => {
         InferTensorContents {
-            uint64_contents: $array.into_raw_vec(),
+            uint64_contents: $array.as_standard_layout().iter().cloned().collect::<Vec<_>>(),
             ..Default::default()
         }
     };
 
     ($array:expr; f32) => {
         InferTensorContents {
-            fp32_contents: $array.into_raw_vec(),
+            fp32_contents: $array.as_standard_layout().iter().cloned().collect::<Vec<_>>(),
             ..Default::default()
         }
     };
 
     ($array:expr; f64) => {
         InferTensorContents {
-            fp64_contents: $array.into_raw_vec(),
+            fp64_contents: $array.as_standard_layout().iter().cloned().collect::<Vec<_>>(),
             ..Default::default()
         }
     };
 
     ($array:expr; Bytes) => {
         InferTensorContents {
-            bytes_contents: $array.into_raw_vec(),
+            bytes_contents: $array.as_standard_layout().iter().cloned().collect::<Vec<_>>(),
             ..Default::default()
         }
     };
