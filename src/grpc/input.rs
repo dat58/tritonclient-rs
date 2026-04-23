@@ -5,7 +5,6 @@ use super::pb::{
 };
 use crate::types::{Bytes, TritonDataTypes};
 use ndarray::ArrayD;
-use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
 pub trait TransformInferTensorContents: Sized + 'static {
@@ -15,6 +14,12 @@ pub trait TransformInferTensorContents: Sized + 'static {
 #[derive(Clone, Debug)]
 pub struct InferInput {
     inner: InferInputTensor,
+}
+
+impl Default for InferInput {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl InferInput {
@@ -132,6 +137,12 @@ pub struct ModelInput {
     inner: ModelInferRequest,
 }
 
+impl Default for ModelInput {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ModelInput {
     pub fn new() -> Self {
         Self {
@@ -149,11 +160,7 @@ impl ModelInput {
     }
 
     pub fn set_input(&mut self, input: InferInput) {
-        if self.inner.inputs.is_empty() {
-            self.inner.inputs = vec![input.build()];
-        } else {
-            self.inner.inputs.push(input.build());
-        }
+        self.inner.inputs.push(input.build());
     }
 
     pub fn input(mut self, input: InferInput) -> Self {
@@ -236,8 +243,8 @@ generate_trait_transform_infer_tensor_contents!(f32);
 generate_trait_transform_infer_tensor_contents!(f64);
 generate_trait_transform_infer_tensor_contents!(Bytes);
 
-impl Into<ModelInferRequest> for ModelInput {
-    fn into(self) -> ModelInferRequest {
-        self.build()
+impl From<ModelInput> for ModelInferRequest {
+    fn from(input: ModelInput) -> Self {
+        input.build()
     }
 }
